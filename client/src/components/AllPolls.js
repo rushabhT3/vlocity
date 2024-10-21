@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useCallback, useRef } from "react";
 import {
   Container,
   Typography,
@@ -10,13 +10,15 @@ import {
 } from "@mui/material";
 import axios from "axios";
 import { Link } from "react-router-dom";
+import io from "socket.io-client";
 
 const AllPolls = () => {
   const [polls, setPolls] = useState([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
+  const socketRef = useRef(null);
 
-  const fetchPolls = async () => {
+  const fetchPolls = useCallback(async () => {
     setLoading(true);
     setError(null);
     try {
@@ -36,11 +38,35 @@ const AllPolls = () => {
     } finally {
       setLoading(false);
     }
-  };
+  }, []);
 
   useEffect(() => {
     fetchPolls();
-  }, []);
+
+    socketRef.current = io(process.env.REACT_APP_BACKEND_URL, {
+      transports: ["websocket"],
+      upgrade: false,
+    });
+
+    socketRef.current.on("connect", () => {
+      console.log("Connected to Socket.IO server for all polls");
+    });
+
+    socketRef.current.on("newPollCreated", (newPoll) => {
+      console.log("New poll received:", newPoll);
+      setPolls((prevPolls) => [newPoll, ...prevPolls]);
+    });
+
+    socketRef.current.on("connect_error", (error) => {
+      console.error("Socket connection error:", error);
+    });
+
+    return () => {
+      if (socketRef.current) {
+        socketRef.current.disconnect();
+      }
+    };
+  });
 
   return (
     <Container>

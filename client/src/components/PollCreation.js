@@ -2,6 +2,7 @@ import React, { useState, useEffect } from "react";
 import { Container, TextField, Button, Typography } from "@mui/material";
 import axios from "axios";
 import { useNavigate } from "react-router-dom";
+import io from "socket.io-client";
 
 const PollCreation = () => {
   const [question, setQuestion] = useState("");
@@ -19,9 +20,7 @@ const PollCreation = () => {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-
     const newPoll = { question, options: [option1, option2] };
-
     try {
       const response = await axios.post(
         `${process.env.REACT_APP_BACKEND_URL}/api/polls/create`,
@@ -34,11 +33,14 @@ const PollCreation = () => {
       );
       console.log("Poll created:", response.data);
 
+      // Emit the new poll to all clients
+      const socket = io(process.env.REACT_APP_BACKEND_URL);
+      socket.emit("newPollCreated", response.data);
+
       // Clear input fields
       setQuestion("");
       setOption1("");
       setOption2("");
-
       // Redirect to AllPolls page
       navigate("/polls");
     } catch (error) {

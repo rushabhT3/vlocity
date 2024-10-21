@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useRef, useCallback } from "react";
 import {
   Container,
   Typography,
@@ -9,6 +9,8 @@ import {
 } from "@mui/material";
 import { useParams } from "react-router-dom";
 import axios from "axios";
+import io from "socket.io-client";
+
 import CommentSection from "./CommentSection";
 
 const PollDetails = () => {
@@ -17,9 +19,30 @@ const PollDetails = () => {
   const [error, setError] = useState(null);
   const [votingError, setVotingError] = useState(null);
   const { id } = useParams();
+  const socketRef = useRef(null);
 
   useEffect(() => {
     fetchPoll();
+
+    socketRef.current = io(process.env.REACT_APP_BACKEND_URL, {
+      transports: ["websocket"],
+      upgrade: false,
+    });
+
+    socketRef.current.on("connect", () => {
+      console.log("Connected to Socket.IO server for polls");
+      socketRef.current.emit("joinPollRoom", id);
+    });
+
+    socketRef.current.on("pollUpdated", handlePollUpdate);
+
+    return () => {
+      if (socketRef.current) {
+        socketRef.current.emit("leavePollRoom", id);
+        socketRef.current.off("pollUpdated");
+        socketRef.current.disconnect();
+      }
+    };
   }, [id]);
 
   const fetchPoll = async () => {
@@ -42,6 +65,11 @@ const PollDetails = () => {
     }
   };
 
+  const handlePollUpdate = (updatedPoll) => {
+    console.log("Received updated poll:", updatedPoll);
+    setPoll((prevPoll) => ({ ...prevPoll, ...updatedPoll }));
+  };
+
   const handleVote = async (optionIndex) => {
     const token = localStorage.getItem("token");
     try {
@@ -54,30 +82,15 @@ const PollDetails = () => {
           },
         }
       );
-      // Refresh poll data after voting
-      fetchPoll();
+      // We don't update the state here. We'll wait for the socket to send us the updated poll.
+      setVotingError(null);
     } catch (err) {
       if (
         err.response &&
         err.response.status === 400 &&
         err.response.data.message === "You have already voted in this poll"
       ) {
-        // If the user has already voted, try to update the vote instead
-        try {
-          await axios.put(
-            `${process.env.REACT_APP_BACKEND_URL}/api/polls/vote`,
-            { pollId: id, optionIndex },
-            {
-              headers: {
-                Authorization: `Bearer ${token}`,
-              },
-            }
-          );
-          fetchPoll();
-        } catch (updateErr) {
-          setVotingError("Failed to update vote. Please try again.");
-          console.error("Error updating vote:", updateErr);
-        }
+        setVotingError("You have already voted in this poll.");
       } else {
         setVotingError("Failed to submit vote. Please try again.");
         console.error("Error voting:", err);

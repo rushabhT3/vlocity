@@ -1,6 +1,3 @@
-const multer = require('multer');
-const path = require('path');
-
 const User = require('../models/User');
 
 exports.getProfile = async (req, res) => {

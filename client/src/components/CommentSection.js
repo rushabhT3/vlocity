@@ -40,6 +40,10 @@ const CommentSection = ({ pollId }) => {
     };
   }, [pollId]);
 
+  const handleNewComment = (newComment) => {
+    setComments((prevComments) => [newComment, ...prevComments]);
+  };
+
   const fetchComments = async () => {
     try {
       const response = await axios.get(
@@ -50,10 +54,6 @@ const CommentSection = ({ pollId }) => {
       setError("Failed to fetch comments");
       console.error("Error fetching comments:", err);
     }
-  };
-
-  const handleNewComment = (newComment) => {
-    setComments((prevComments) => [newComment, ...prevComments]);
   };
 
   const submitComment = async () => {
