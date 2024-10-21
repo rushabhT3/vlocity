@@ -74,10 +74,14 @@ const CommentSection = ({ pollId }) => {
         }
       );
       setNewComment("");
-      // Optimistically add the new comment to the list
-      handleNewComment(response.data);
+      // The server will emit the new comment, so we don't need to add it manually
     } catch (err) {
-      setError(err.response?.data?.message || "Failed to submit comment");
+      if (err.response && err.response.status === 401) {
+        setError("Authentication failed. Please log in again.");
+        // You might want to redirect the user to the login page here
+      } else {
+        setError(err.response?.data?.message || "Failed to submit comment");
+      }
       console.error("Error submitting comment:", err);
     }
   };

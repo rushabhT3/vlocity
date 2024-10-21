@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useCallback, useRef } from "react";
+import React, { useEffect, useState } from "react";
 import {
   Container,
   Typography,
@@ -9,7 +9,6 @@ import {
 } from "@mui/material";
 import { useParams } from "react-router-dom";
 import axios from "axios";
-// import io from "socket.io-client";
 import CommentSection from "./CommentSection";
 
 const PollDetails = () => {
@@ -44,8 +43,8 @@ const PollDetails = () => {
   };
 
   const handleVote = async (optionIndex) => {
+    const token = localStorage.getItem("token");
     try {
-      const token = localStorage.getItem("token");
       await axios.post(
         `${process.env.REACT_APP_BACKEND_URL}/api/polls/vote`,
         { pollId: id, optionIndex },
@@ -58,8 +57,31 @@ const PollDetails = () => {
       // Refresh poll data after voting
       fetchPoll();
     } catch (err) {
-      setVotingError("Failed to submit vote. Please try again.");
-      console.error("Error voting:", err);
+      if (
+        err.response &&
+        err.response.status === 400 &&
+        err.response.data.message === "You have already voted in this poll"
+      ) {
+        // If the user has already voted, try to update the vote instead
+        try {
+          await axios.put(
+            `${process.env.REACT_APP_BACKEND_URL}/api/polls/vote`,
+            { pollId: id, optionIndex },
+            {
+              headers: {
+                Authorization: `Bearer ${token}`,
+              },
+            }
+          );
+          fetchPoll();
+        } catch (updateErr) {
+          setVotingError("Failed to update vote. Please try again.");
+          console.error("Error updating vote:", updateErr);
+        }
+      } else {
+        setVotingError("Failed to submit vote. Please try again.");
+        console.error("Error voting:", err);
+      }
     }
   };
 

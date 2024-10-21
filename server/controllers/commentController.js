@@ -1,15 +1,15 @@
 const Comment = require("../models/Comment");
-const { io } = require("../server");
+// const { io } = require("../server");
 
 exports.createComment = async (req, res) => {
   try {
     const { text, pollId } = req.body;
 
-    if (!req.user || !req.user.id) {
+    if (!req.userId) {
       return res.status(401).json({ message: "User not authenticated" });
     }
 
-    const userId = req.user.id;
+    const userId = req.userId;
 
     const comment = await Comment.create({
       text,
