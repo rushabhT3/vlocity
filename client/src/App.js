@@ -29,14 +29,13 @@ function App() {
   const [isLoggedIn, setIsLoggedIn] = useState(false);
 
   useEffect(() => {
-    // Check if the token exists in localStorage
     const token = localStorage.getItem("token");
-    setIsLoggedIn(!!token); // Set isLoggedIn to true if token exists
+    setIsLoggedIn(!!token); 
   }, []);
 
   const handleLogin = () => {
-    const token = localStorage.getItem("token"); // Simulate a login action
-    setIsLoggedIn(!!token); // Update the state after login
+    const token = localStorage.getItem("token"); 
+    setIsLoggedIn(!!token); 
   };
 
   return (

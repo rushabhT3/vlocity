@@ -35,15 +35,11 @@ To set up and run the server application:
    ```bash
    cd server
    ```
-2. Create a folder named `uploads` inside the `server` directory:
-   ```bash
-   mkdir uploads
-   ```
-3. Install the required dependencies:
+2. Install the required dependencies:
    ```bash
    npm install
    ```
-4. Start the server:
+3. Start the server:
    ```bash
    node server.js
    ```
